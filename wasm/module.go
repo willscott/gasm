@@ -50,6 +50,16 @@ type (
 
 // DecodeModule decodes a `raw` module from io.Reader whose index spaces are yet to be initialized
 func DecodeModule(r io.Reader) (*Module, error) {
+	return DecodeModuleGas(r, &unmetered{})
+}
+
+func DecodeModuleGas(r io.Reader, gas GasMeter) (m *Module, err error) {
+	defer func() {
+		if gas.Exceeded() {
+			err = ErrOutOfGas
+			return
+		}
+	}()
 	// magic number
 	buf := make([]byte, 4)
 	if n, err := io.ReadFull(r, buf); err != nil || n != 4 {
@@ -60,6 +70,7 @@ func DecodeModule(r io.Reader) (*Module, error) {
 			return nil, ErrInvalidMagicNumber
 		}
 	}
+	gas.Step(4)
 
 	// version
 	if n, err := io.ReadFull(r, buf); err != nil || n != 4 {
@@ -70,9 +81,10 @@ func DecodeModule(r io.Reader) (*Module, error) {
 			return nil, ErrInvalidVersion
 		}
 	}
+	gas.Step(4)
 
 	ret := &Module{}
-	if err := ret.readSections(r); err != nil {
+	if err := ret.readSections(r, gas); err != nil {
 		return nil, fmt.Errorf("readSections failed: %w", err)
 	}
 

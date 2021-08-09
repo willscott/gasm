@@ -71,7 +71,7 @@ func TestReadConstantExpression(t *testing.T) {
 		for _, b := range [][]byte{
 			{}, {0xaa}, {0x41, 0x1}, {0x41, 0x1, 0x41},
 		} {
-			_, err := readConstantExpression(bytes.NewBuffer(b))
+			_, err := readConstantExpression(bytes.NewBuffer(b), &unmetered{})
 			assert.Error(t, err)
 			t.Log(err)
 		}
@@ -95,7 +95,7 @@ func TestReadConstantExpression(t *testing.T) {
 				exp:   &ConstantExpression{optCode: OptCodeGlobalGet, data: []byte{0x01}},
 			},
 		} {
-			actual, err := readConstantExpression(bytes.NewBuffer(c.bytes))
+			actual, err := readConstantExpression(bytes.NewBuffer(c.bytes), &unmetered{})
 			assert.NoError(t, err)
 			assert.Equal(t, c.exp, actual)
 		}

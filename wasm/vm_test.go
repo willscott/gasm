@@ -25,6 +25,7 @@ func TestVirtualMachine_ExecExportedFunction(t *testing.T) {
 				ReturnTypes: []ValueType{ValueTypeI64},
 			},
 		}},
+		GasMeter:     &unmetered{},
 		OperandStack: NewVirtualMachineOperandStack(),
 	}
 

@@ -22,7 +22,7 @@ func TestHostFunction_Call(t *testing.T) {
 		},
 	}
 
-	vm := &VirtualMachine{OperandStack: NewVirtualMachineOperandStack()}
+	vm := &VirtualMachine{OperandStack: NewVirtualMachineOperandStack(), GasMeter: &unmetered{}}
 	vm.OperandStack.Push(10)
 
 	hf.Call(vm)
@@ -48,6 +48,7 @@ func TestNativeFunction_Call(t *testing.T) {
 		ActiveContext: &NativeFunctionContext{
 			PC: 1000,
 		},
+		GasMeter: &unmetered{},
 	}
 	n.Call(vm)
 	assert.Equal(t, uint64(0x05), vm.OperandStack.Pop())
@@ -68,6 +69,7 @@ func TestVirtualMachine_execNativeFunction(t *testing.T) {
 		ActiveContext: &NativeFunctionContext{
 			Function: n,
 		},
+		GasMeter: &unmetered{},
 	}
 
 	vm.execNativeFunction()

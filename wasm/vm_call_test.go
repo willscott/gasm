@@ -21,6 +21,7 @@ func Test_call(t *testing.T) {
 				Body: []byte{byte(OptCodeCall), 0x01},
 			},
 		},
+		GasMeter:  &unmetered{},
 		Functions: []VirtualMachineFunction{nil, df},
 	}
 
@@ -43,6 +44,7 @@ func Test_callIndirect(t *testing.T) {
 				Table: [][]*uint32{{nil, uint32Ptr(1)}},
 			},
 		},
+		GasMeter:     &unmetered{},
 		OperandStack: NewVirtualMachineOperandStack(),
 	}
 	vm.OperandStack.Push(1)

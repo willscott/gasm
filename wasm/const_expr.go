@@ -53,7 +53,7 @@ func (m *Module) executeConstExpression(expr *ConstantExpression) (v interface{}
 	return v, nil
 }
 
-func readConstantExpression(r io.Reader) (*ConstantExpression, error) {
+func readConstantExpression(r io.Reader, gas GasMeter) (*ConstantExpression, error) {
 	b := make([]byte, 1)
 	_, err := io.ReadFull(r, b)
 	if err != nil {
@@ -61,19 +61,25 @@ func readConstantExpression(r io.Reader) (*ConstantExpression, error) {
 	}
 	buf := new(bytes.Buffer)
 	teeR := io.TeeReader(r, buf)
+	gas.Step(1)
 
 	optCode := OptCode(b[0])
 	switch optCode {
 	case OptCodeI32Const:
 		_, _, err = leb128.DecodeInt32(teeR)
+		gas.Step(4)
 	case OptCodeI64Const:
 		_, _, err = leb128.DecodeInt64(teeR)
+		gas.Step(8)
 	case OptCodeF32Const:
 		_, err = readFloat32(teeR)
+		gas.Step(4)
 	case OptCodeF64Const:
 		_, err = readFloat64(teeR)
+		gas.Step(8)
 	case OptCodeGlobalGet:
 		_, _, err = leb128.DecodeUint32(teeR)
+		gas.Step(4)
 	default:
 		return nil, fmt.Errorf("%w for opt code: %#x", ErrInvalidByte, b[0])
 	}
@@ -85,6 +91,7 @@ func readConstantExpression(r io.Reader) (*ConstantExpression, error) {
 	if _, err := io.ReadFull(r, b); err != nil {
 		return nil, fmt.Errorf("look for end optcode: %w", err)
 	}
+	gas.Step(1)
 
 	if b[0] != byte(OptCodeEnd) {
 		return nil, fmt.Errorf("constant expression has not terminated")

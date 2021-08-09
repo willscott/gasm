@@ -16,11 +16,12 @@ type FunctionType struct {
 	InputTypes, ReturnTypes []ValueType
 }
 
-func readFunctionType(r io.Reader) (*FunctionType, error) {
+func readFunctionType(r io.Reader, gas GasMeter) (*FunctionType, error) {
 	b := make([]byte, 1)
 	if _, err := io.ReadFull(r, b); err != nil {
 		return nil, fmt.Errorf("read leading byte: %w", err)
 	}
+	gas.Step(1)
 
 	if b[0] != 0x60 {
 		return nil, fmt.Errorf("%w: %#x != 0x60", ErrInvalidByte, b[0])
@@ -30,8 +31,9 @@ func readFunctionType(r io.Reader) (*FunctionType, error) {
 	if err != nil {
 		return nil, fmt.Errorf("get the size of input value types: %w", err)
 	}
+	gas.Step(4)
 
-	ip, err := readValueTypes(r, s)
+	ip, err := readValueTypes(r, s, gas)
 	if err != nil {
 		return nil, fmt.Errorf("read value types of inputs: %w", err)
 	}
@@ -40,8 +42,9 @@ func readFunctionType(r io.Reader) (*FunctionType, error) {
 	if err != nil {
 		return nil, fmt.Errorf("get the size of output value types: %w", err)
 	}
+	gas.Step(4)
 
-	op, err := readValueTypes(r, s)
+	op, err := readValueTypes(r, s, gas)
 	if err != nil {
 		return nil, fmt.Errorf("read value types of outputs: %w", err)
 	}
@@ -57,12 +60,13 @@ type LimitsType struct {
 	Max *uint32
 }
 
-func readLimitsType(r io.Reader) (*LimitsType, error) {
+func readLimitsType(r io.Reader, gas GasMeter) (*LimitsType, error) {
 	b := make([]byte, 1)
 	_, err := io.ReadFull(r, b)
 	if err != nil {
 		return nil, fmt.Errorf("read leading byte: %w", err)
 	}
+	gas.Step(1)
 
 	ret := &LimitsType{}
 	switch b[0] {
@@ -71,6 +75,7 @@ func readLimitsType(r io.Reader) (*LimitsType, error) {
 		if err != nil {
 			return nil, fmt.Errorf("read min of limit: %w", err)
 		}
+		gas.Step(4)
 	case 0x01:
 		ret.Min, _, err = leb128.DecodeUint32(r)
 		if err != nil {
@@ -80,6 +85,7 @@ func readLimitsType(r io.Reader) (*LimitsType, error) {
 		if err != nil {
 			return nil, fmt.Errorf("read min of limit: %w", err)
 		}
+		gas.Step(8)
 		ret.Max = &m
 	default:
 		return nil, fmt.Errorf("%w for limits: %#x != 0x00 or 0x01", ErrInvalidByte, b[0])
@@ -92,17 +98,18 @@ type TableType struct {
 	Limit *LimitsType
 }
 
-func readTableType(r io.Reader) (*TableType, error) {
+func readTableType(r io.Reader, gas GasMeter) (*TableType, error) {
 	b := make([]byte, 1)
 	if _, err := io.ReadFull(r, b); err != nil {
 		return nil, fmt.Errorf("read leading byte: %w", err)
 	}
+	gas.Step(1)
 
 	if b[0] != 0x70 {
 		return nil, fmt.Errorf("%w: invalid element type %#x != %#x", ErrInvalidByte, b[0], 0x70)
 	}
 
-	lm, err := readLimitsType(r)
+	lm, err := readLimitsType(r, gas)
 	if err != nil {
 		return nil, fmt.Errorf("read limits: %w", err)
 	}
@@ -115,8 +122,8 @@ func readTableType(r io.Reader) (*TableType, error) {
 
 type MemoryType = LimitsType
 
-func readMemoryType(r io.Reader) (*MemoryType, error) {
-	return readLimitsType(r)
+func readMemoryType(r io.Reader, gas GasMeter) (*MemoryType, error) {
+	return readLimitsType(r, gas)
 }
 
 type GlobalType struct {
@@ -124,8 +131,8 @@ type GlobalType struct {
 	Mutable bool
 }
 
-func readGlobalType(r io.Reader) (*GlobalType, error) {
-	vt, err := readValueTypes(r, 1)
+func readGlobalType(r io.Reader, gas GasMeter) (*GlobalType, error) {
+	vt, err := readValueTypes(r, 1, gas)
 	if err != nil {
 		return nil, fmt.Errorf("read value type: %w", err)
 	}
@@ -138,6 +145,7 @@ func readGlobalType(r io.Reader) (*GlobalType, error) {
 	if _, err := io.ReadFull(r, b); err != nil {
 		return nil, fmt.Errorf("read mutablity: %w", err)
 	}
+	gas.Step(1)
 
 	switch mut := b[0]; mut {
 	case 0x00:

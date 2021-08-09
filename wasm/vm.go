@@ -19,6 +19,7 @@ type (
 		Memory        []byte
 		Globals       []uint64
 
+		GasMeter
 		OperandStack *VirtualMachineOperandStack
 		// used to store runtime data per VirtualMachine
 		RuntimeData interface{}
@@ -33,12 +34,17 @@ type (
 )
 
 func NewVM(module *Module, externModules map[string]*Module) (*VirtualMachine, error) {
+	return NewGasVM(module, externModules, &unmetered{})
+}
+
+func NewGasVM(module *Module, externModules map[string]*Module, gas GasMeter) (*VirtualMachine, error) {
 	if err := module.buildIndexSpaces(externModules); err != nil {
 		return nil, fmt.Errorf("build index space: %w", err)
 	}
 
 	vm := &VirtualMachine{
 		InnerModule:  module,
+		GasMeter:     gas,
 		OperandStack: NewVirtualMachineOperandStack(),
 	}
 
@@ -46,6 +52,8 @@ func NewVM(module *Module, externModules map[string]*Module) (*VirtualMachine, e
 	// note: MVP restricts vm to have a single memory space
 	vm.Memory = vm.InnerModule.IndexSpace.Memory[0]
 	if diff := uint64(vm.InnerModule.SecMemory[0].Min)*vmPageSize - uint64(len(vm.Memory)); diff > 0 {
+		// TODO: consider following EVM page-based cost model
+		vm.GasMeter.Step(int64(diff))
 		vm.Memory = append(vm.Memory, make([]byte, diff)...)
 	}
 

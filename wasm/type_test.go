@@ -13,7 +13,7 @@ import (
 func TestReadFunctionType(t *testing.T) {
 	t.Run("ng", func(t *testing.T) {
 		buf := []byte{0x00}
-		_, err := readFunctionType(bytes.NewBuffer(buf))
+		_, err := readFunctionType(bytes.NewBuffer(buf), &unmetered{})
 		assert.True(t, errors.Is(err, ErrInvalidByte))
 		t.Log(err)
 	})
@@ -52,7 +52,7 @@ func TestReadFunctionType(t *testing.T) {
 		},
 	} {
 		t.Run(strconv.Itoa(i), func(t *testing.T) {
-			actual, err := readFunctionType(bytes.NewBuffer(c.bytes))
+			actual, err := readFunctionType(bytes.NewBuffer(c.bytes), &unmetered{})
 			require.NoError(t, err)
 			assert.Equal(t, c.exp, actual)
 		})
@@ -68,7 +68,7 @@ func TestReadLimitsType(t *testing.T) {
 		{bytes: []byte{0x01, 0xa, 0xa}, exp: &LimitsType{Min: 10, Max: uint32Ptr(10)}},
 	} {
 		t.Run(strconv.Itoa(i), func(t *testing.T) {
-			actual, err := readLimitsType(bytes.NewBuffer(c.bytes))
+			actual, err := readLimitsType(bytes.NewBuffer(c.bytes), &unmetered{})
 			require.NoError(t, err)
 			assert.Equal(t, c.exp, actual)
 		})
@@ -82,7 +82,7 @@ func uint32Ptr(in uint32) *uint32 {
 func TestReadTableType(t *testing.T) {
 	t.Run("ng", func(t *testing.T) {
 		buf := []byte{0x00}
-		_, err := readTableType(bytes.NewBuffer(buf))
+		_, err := readTableType(bytes.NewBuffer(buf), &unmetered{})
 		require.True(t, errors.Is(err, ErrInvalidByte))
 		t.Log(err)
 	})
@@ -108,7 +108,7 @@ func TestReadTableType(t *testing.T) {
 	} {
 		c := c
 		t.Run(strconv.Itoa(i), func(t *testing.T) {
-			actual, err := readTableType(bytes.NewBuffer(c.bytes))
+			actual, err := readTableType(bytes.NewBuffer(c.bytes), &unmetered{})
 			require.NoError(t, err)
 			assert.Equal(t, c.exp, actual)
 		})
@@ -124,7 +124,7 @@ func TestReadMemoryType(t *testing.T) {
 		{bytes: []byte{0x01, 0xa, 0xa}, exp: &MemoryType{Min: 10, Max: uint32Ptr(10)}},
 	} {
 		t.Run(strconv.Itoa(i), func(t *testing.T) {
-			actual, err := readMemoryType(bytes.NewBuffer(c.bytes))
+			actual, err := readMemoryType(bytes.NewBuffer(c.bytes), &unmetered{})
 			require.NoError(t, err)
 			assert.Equal(t, c.exp, actual)
 		})
@@ -134,7 +134,7 @@ func TestReadMemoryType(t *testing.T) {
 func TestReadGlobalType(t *testing.T) {
 	t.Run("ng", func(t *testing.T) {
 		buf := []byte{0x7e, 0x3}
-		_, err := readGlobalType(bytes.NewBuffer(buf))
+		_, err := readGlobalType(bytes.NewBuffer(buf), &unmetered{})
 		require.True(t, errors.Is(err, ErrInvalidByte))
 		t.Log(err)
 	})
@@ -147,7 +147,7 @@ func TestReadGlobalType(t *testing.T) {
 		{bytes: []byte{0x7e, 0x01}, exp: &GlobalType{Value: ValueTypeI64, Mutable: true}},
 	} {
 		t.Run(strconv.Itoa(i), func(t *testing.T) {
-			actual, err := readGlobalType(bytes.NewBuffer(c.bytes))
+			actual, err := readGlobalType(bytes.NewBuffer(c.bytes), &unmetered{})
 			require.NoError(t, err)
 			assert.Equal(t, c.exp, actual)
 		})

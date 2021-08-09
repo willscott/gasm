@@ -95,6 +95,7 @@ func (n *NativeFunction) Call(vm *VirtualMachine) {
 
 func (vm *VirtualMachine) execNativeFunction() {
 	for ; int(vm.ActiveContext.PC) < len(vm.ActiveContext.Function.Body); vm.ActiveContext.PC++ {
+		vm.GasMeter.Step(1)
 		switch op := vm.ActiveContext.Function.Body[vm.ActiveContext.PC]; OptCode(op) {
 		case OptCodeReturn:
 			return

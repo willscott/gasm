@@ -21,7 +21,7 @@ func Test_block(t *testing.T) {
 		},
 		LabelStack: NewVirtualMachineLabelStack(),
 	}
-	block(&VirtualMachine{ActiveContext: ctx})
+	block(&VirtualMachine{ActiveContext: ctx, GasMeter: &unmetered{}})
 	assert.Equal(t, &Label{
 		Arity:          1,
 		ContinuationPC: 100,
@@ -45,7 +45,7 @@ func Test_loop(t *testing.T) {
 		},
 		LabelStack: NewVirtualMachineLabelStack(),
 	}
-	loop(&VirtualMachine{ActiveContext: ctx})
+	loop(&VirtualMachine{ActiveContext: ctx, GasMeter: &unmetered{}})
 	assert.Equal(t, &Label{
 		Arity:          1,
 		ContinuationPC: 0,
@@ -70,7 +70,7 @@ func Test_ifOp(t *testing.T) {
 			},
 			LabelStack: NewVirtualMachineLabelStack(),
 		}
-		vm := &VirtualMachine{ActiveContext: ctx, OperandStack: NewVirtualMachineOperandStack()}
+		vm := &VirtualMachine{ActiveContext: ctx, OperandStack: NewVirtualMachineOperandStack(), GasMeter: &unmetered{}}
 		vm.OperandStack.Push(1)
 		ifOp(vm)
 		assert.Equal(t, &Label{
@@ -96,7 +96,7 @@ func Test_ifOp(t *testing.T) {
 			},
 			LabelStack: NewVirtualMachineLabelStack(),
 		}
-		vm := &VirtualMachine{ActiveContext: ctx, OperandStack: NewVirtualMachineOperandStack()}
+		vm := &VirtualMachine{ActiveContext: ctx, OperandStack: NewVirtualMachineOperandStack(), GasMeter: &unmetered{}}
 		vm.OperandStack.Push(0)
 		ifOp(vm)
 		assert.Equal(t, &Label{
@@ -111,14 +111,14 @@ func Test_ifOp(t *testing.T) {
 func Test_elseOp(t *testing.T) {
 	ctx := &NativeFunctionContext{LabelStack: NewVirtualMachineLabelStack()}
 	ctx.LabelStack.Push(&Label{EndPC: 100000})
-	elseOp(&VirtualMachine{ActiveContext: ctx})
+	elseOp(&VirtualMachine{ActiveContext: ctx, GasMeter: &unmetered{}})
 	assert.Equal(t, uint64(100000), ctx.PC)
 }
 
 func Test_end(t *testing.T) {
 	ctx := &NativeFunctionContext{LabelStack: NewVirtualMachineLabelStack()}
 	ctx.LabelStack.Push(&Label{EndPC: 100000})
-	end(&VirtualMachine{ActiveContext: ctx})
+	end(&VirtualMachine{ActiveContext: ctx, GasMeter: &unmetered{}})
 	assert.Equal(t, -1, ctx.LabelStack.SP)
 }
 
@@ -127,7 +127,7 @@ func Test_br(t *testing.T) {
 		LabelStack: NewVirtualMachineLabelStack(),
 		Function:   &NativeFunction{Body: []byte{0x00, 0x01}},
 	}
-	vm := &VirtualMachine{ActiveContext: ctx, OperandStack: NewVirtualMachineOperandStack()}
+	vm := &VirtualMachine{ActiveContext: ctx, OperandStack: NewVirtualMachineOperandStack(), GasMeter: &unmetered{}}
 	ctx.LabelStack.Push(&Label{ContinuationPC: 5})
 	ctx.LabelStack.Push(&Label{})
 	br(vm)
@@ -140,7 +140,7 @@ func Test_brIf(t *testing.T) {
 			LabelStack: NewVirtualMachineLabelStack(),
 			Function:   &NativeFunction{Body: []byte{0x00, 0x01}},
 		}
-		vm := &VirtualMachine{ActiveContext: ctx, OperandStack: NewVirtualMachineOperandStack()}
+		vm := &VirtualMachine{ActiveContext: ctx, OperandStack: NewVirtualMachineOperandStack(), GasMeter: &unmetered{}}
 		vm.OperandStack.Push(1)
 		ctx.LabelStack.Push(&Label{ContinuationPC: 5})
 		ctx.LabelStack.Push(&Label{})
@@ -153,7 +153,7 @@ func Test_brIf(t *testing.T) {
 			LabelStack: NewVirtualMachineLabelStack(),
 			Function:   &NativeFunction{Body: []byte{0x00, 0x01}},
 		}
-		vm := &VirtualMachine{ActiveContext: ctx, OperandStack: NewVirtualMachineOperandStack()}
+		vm := &VirtualMachine{ActiveContext: ctx, OperandStack: NewVirtualMachineOperandStack(), GasMeter: &unmetered{}}
 		vm.OperandStack.Push(0)
 		brIf(vm)
 		assert.Equal(t, uint64(1), ctx.PC)

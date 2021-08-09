@@ -30,7 +30,7 @@ func TestReadValueTypes(t *testing.T) {
 		},
 	} {
 		t.Run(strconv.Itoa(i), func(t *testing.T) {
-			actual, err := readValueTypes(bytes.NewBuffer(c.bytes), c.num)
+			actual, err := readValueTypes(bytes.NewBuffer(c.bytes), c.num, &unmetered{})
 			require.NoError(t, err)
 			assert.Equal(t, c.exp, actual)
 		})
@@ -41,7 +41,7 @@ func TestReadNameValue(t *testing.T) {
 	exp := "abcdefghij"
 	buf := []byte{0x0a}
 	buf = append(buf, exp...)
-	actual, err := readNameValue(bytes.NewBuffer(buf))
+	actual, err := readNameValue(bytes.NewBuffer(buf), &unmetered{})
 	require.NoError(t, err)
 	assert.Equal(t, exp, actual)
 }

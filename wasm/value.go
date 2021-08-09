@@ -16,13 +16,14 @@ const (
 	ValueTypeF64 ValueType = 0x7c
 )
 
-func readValueTypes(r io.Reader, num uint32) ([]ValueType, error) {
+func readValueTypes(r io.Reader, num uint32, gas GasMeter) ([]ValueType, error) {
 	ret := make([]ValueType, num)
 	buf := make([]byte, num)
 	_, err := io.ReadFull(r, buf)
 	if err != nil {
 		return nil, err
 	}
+	gas.Step(int64(num))
 
 	for i, v := range buf {
 		switch vt := ValueType(v); vt {
@@ -35,16 +36,18 @@ func readValueTypes(r io.Reader, num uint32) ([]ValueType, error) {
 	return ret, nil
 }
 
-func readNameValue(r io.Reader) (string, error) {
+func readNameValue(r io.Reader, gas GasMeter) (string, error) {
 	vs, _, err := leb128.DecodeUint32(r)
 	if err != nil {
 		return "", fmt.Errorf("read size of name: %w", err)
 	}
+	gas.Step(4)
 
 	buf := make([]byte, vs)
 	if _, err := io.ReadFull(r, buf); err != nil {
 		return "", fmt.Errorf("read bytes of name: %w", err)
 	}
+	gas.Step(int64(vs))
 
 	return string(buf), nil
 }

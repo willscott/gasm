@@ -13,7 +13,7 @@ import (
 func TestReadImportDesc(t *testing.T) {
 	t.Run("ng", func(t *testing.T) {
 		buf := []byte{0x04}
-		_, err := readImportDesc(bytes.NewBuffer(buf))
+		_, err := readImportDesc(bytes.NewBuffer(buf), &unmetered{})
 		require.True(t, errors.Is(err, ErrInvalidByte))
 		t.Log(err)
 	})
@@ -55,7 +55,7 @@ func TestReadImportDesc(t *testing.T) {
 		},
 	} {
 		t.Run(strconv.Itoa(i), func(t *testing.T) {
-			actual, err := readImportDesc(bytes.NewBuffer(c.bytes))
+			actual, err := readImportDesc(bytes.NewBuffer(c.bytes), &unmetered{})
 			require.NoError(t, err)
 			assert.Equal(t, c.exp, actual)
 		})
@@ -76,7 +76,7 @@ func TestReadImportSegment(t *testing.T) {
 	buf = append(buf, exp.Name...)
 	buf = append(buf, 0x00, 0x0a)
 
-	actual, err := readImportSegment(bytes.NewBuffer(buf))
+	actual, err := readImportSegment(bytes.NewBuffer(buf), &unmetered{})
 	require.NoError(t, err)
 	assert.Equal(t, exp, actual)
 }
@@ -91,7 +91,7 @@ func TestReadGlobalSegment(t *testing.T) {
 	}
 
 	buf := []byte{0x7e, 0x00, 0x42, 0x01, 0x0b}
-	actual, err := readGlobalSegment(bytes.NewBuffer(buf))
+	actual, err := readGlobalSegment(bytes.NewBuffer(buf), &unmetered{})
 	require.NoError(t, err)
 	assert.Equal(t, exp, actual)
 }
@@ -99,7 +99,7 @@ func TestReadGlobalSegment(t *testing.T) {
 func TestReadExportDesc(t *testing.T) {
 	t.Run("ng", func(t *testing.T) {
 		buf := []byte{0x04}
-		_, err := readExportDesc(bytes.NewBuffer(buf))
+		_, err := readExportDesc(bytes.NewBuffer(buf), &unmetered{})
 		require.True(t, errors.Is(err, ErrInvalidByte))
 		t.Log(err)
 	})
@@ -126,7 +126,7 @@ func TestReadExportDesc(t *testing.T) {
 		},
 	} {
 		t.Run(strconv.Itoa(i), func(t *testing.T) {
-			actual, err := readExportDesc(bytes.NewBuffer(c.bytes))
+			actual, err := readExportDesc(bytes.NewBuffer(c.bytes), &unmetered{})
 			require.NoError(t, err)
 			assert.Equal(t, c.exp, actual)
 		})
@@ -144,7 +144,7 @@ func TestReadExportSegment(t *testing.T) {
 	buf = append(buf, exp.Name...)
 	buf = append(buf, 0x00, 0x0a)
 
-	actual, err := readExportSegment(bytes.NewBuffer(buf))
+	actual, err := readExportSegment(bytes.NewBuffer(buf), &unmetered{})
 	require.NoError(t, err)
 	assert.Equal(t, exp, actual)
 }
@@ -178,7 +178,7 @@ func TestReadElementSegment(t *testing.T) {
 		},
 	} {
 		t.Run(strconv.Itoa(i), func(t *testing.T) {
-			actual, err := readElementSegment(bytes.NewBuffer(c.bytes))
+			actual, err := readElementSegment(bytes.NewBuffer(c.bytes), &unmetered{})
 			require.NoError(t, err)
 			assert.Equal(t, c.exp, actual)
 		})
@@ -191,7 +191,7 @@ func TestReadCodeSegment(t *testing.T) {
 		NumLocals: 0x01,
 		Body:      []byte{0x1, 0x1, 0x12, 0x3, 0x01},
 	}
-	actual, err := readCodeSegment(bytes.NewBuffer(buf))
+	actual, err := readCodeSegment(bytes.NewBuffer(buf), &unmetered{})
 	require.NoError(t, err)
 	assert.Equal(t, exp, actual)
 }
@@ -223,7 +223,7 @@ func TestDataSegment(t *testing.T) {
 		},
 	} {
 		t.Run(strconv.Itoa(i), func(t *testing.T) {
-			actual, err := readDataSegment(bytes.NewBuffer(c.bytes))
+			actual, err := readDataSegment(bytes.NewBuffer(c.bytes), &unmetered{})
 			require.NoError(t, err)
 			assert.Equal(t, c.exp, actual)
 		})

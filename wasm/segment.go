@@ -17,11 +17,12 @@ type ImportDesc struct {
 	GlobalTypePtr *GlobalType
 }
 
-func readImportDesc(r io.Reader) (*ImportDesc, error) {
+func readImportDesc(r io.Reader, gas GasMeter) (*ImportDesc, error) {
 	b := make([]byte, 1)
 	if _, err := io.ReadFull(r, b); err != nil {
 		return nil, fmt.Errorf("read value kind: %w", err)
 	}
+	gas.Step(1)
 
 	switch b[0] {
 	case 0x00:
@@ -29,12 +30,13 @@ func readImportDesc(r io.Reader) (*ImportDesc, error) {
 		if err != nil {
 			return nil, fmt.Errorf("read typeindex: %w", err)
 		}
+		gas.Step(4)
 		return &ImportDesc{
 			Kind:         0x00,
 			TypeIndexPtr: &tID,
 		}, nil
 	case 0x01:
-		tt, err := readTableType(r)
+		tt, err := readTableType(r, gas)
 		if err != nil {
 			return nil, fmt.Errorf("read table type: %w", err)
 		}
@@ -43,7 +45,7 @@ func readImportDesc(r io.Reader) (*ImportDesc, error) {
 			TableTypePtr: tt,
 		}, nil
 	case 0x02:
-		mt, err := readMemoryType(r)
+		mt, err := readMemoryType(r, gas)
 		if err != nil {
 			return nil, fmt.Errorf("read table type: %w", err)
 		}
@@ -52,7 +54,7 @@ func readImportDesc(r io.Reader) (*ImportDesc, error) {
 			MemTypePtr: mt,
 		}, nil
 	case 0x03:
-		gt, err := readGlobalType(r)
+		gt, err := readGlobalType(r, gas)
 		if err != nil {
 			return nil, fmt.Errorf("read global type: %w", err)
 		}
@@ -71,18 +73,18 @@ type ImportSegment struct {
 	Desc         *ImportDesc
 }
 
-func readImportSegment(r io.Reader) (*ImportSegment, error) {
-	mn, err := readNameValue(r)
+func readImportSegment(r io.Reader, gas GasMeter) (*ImportSegment, error) {
+	mn, err := readNameValue(r, gas)
 	if err != nil {
 		return nil, fmt.Errorf("read name of imported module: %w", err)
 	}
 
-	n, err := readNameValue(r)
+	n, err := readNameValue(r, gas)
 	if err != nil {
 		return nil, fmt.Errorf("read name of imported module component: %w", err)
 	}
 
-	d, err := readImportDesc(r)
+	d, err := readImportDesc(r, gas)
 	if err != nil {
 		return nil, fmt.Errorf("read import description : %w", err)
 	}
@@ -95,13 +97,13 @@ type GlobalSegment struct {
 	Init *ConstantExpression
 }
 
-func readGlobalSegment(r io.Reader) (*GlobalSegment, error) {
-	gt, err := readGlobalType(r)
+func readGlobalSegment(r io.Reader, gas GasMeter) (*GlobalSegment, error) {
+	gt, err := readGlobalType(r, gas)
 	if err != nil {
 		return nil, fmt.Errorf("read global type: %w", err)
 	}
 
-	init, err := readConstantExpression(r)
+	init, err := readConstantExpression(r, gas)
 	if err != nil {
 		return nil, fmt.Errorf("get init expression: %w", err)
 	}
@@ -124,11 +126,12 @@ const (
 	ExportKindGlobal   byte = 0x03
 )
 
-func readExportDesc(r io.Reader) (*ExportDesc, error) {
+func readExportDesc(r io.Reader, gas GasMeter) (*ExportDesc, error) {
 	b := make([]byte, 1)
 	if _, err := io.ReadFull(r, b); err != nil {
 		return nil, fmt.Errorf("read value kind: %w", err)
 	}
+	gas.Step(1)
 
 	kind := b[0]
 	if kind >= 0x04 {
@@ -139,6 +142,7 @@ func readExportDesc(r io.Reader) (*ExportDesc, error) {
 	if err != nil {
 		return nil, fmt.Errorf("read funcidx: %w", err)
 	}
+	gas.Step(4)
 
 	return &ExportDesc{
 		Kind:  kind,
@@ -152,13 +156,13 @@ type ExportSegment struct {
 	Desc *ExportDesc
 }
 
-func readExportSegment(r io.Reader) (*ExportSegment, error) {
-	name, err := readNameValue(r)
+func readExportSegment(r io.Reader, gas GasMeter) (*ExportSegment, error) {
+	name, err := readNameValue(r, gas)
 	if err != nil {
 		return nil, fmt.Errorf("read name of export module: %w", err)
 	}
 
-	d, err := readExportDesc(r)
+	d, err := readExportDesc(r, gas)
 	if err != nil {
 		return nil, fmt.Errorf("read export description: %w", err)
 	}
@@ -172,13 +176,14 @@ type ElementSegment struct {
 	Init       []uint32
 }
 
-func readElementSegment(r io.Reader) (*ElementSegment, error) {
+func readElementSegment(r io.Reader, gas GasMeter) (*ElementSegment, error) {
 	ti, _, err := leb128.DecodeUint32(r)
 	if err != nil {
 		return nil, fmt.Errorf("get table index: %w", err)
 	}
+	gas.Step(4)
 
-	expr, err := readConstantExpression(r)
+	expr, err := readConstantExpression(r, gas)
 	if err != nil {
 		return nil, fmt.Errorf("read expr for offset: %w", err)
 	}
@@ -191,6 +196,7 @@ func readElementSegment(r io.Reader) (*ElementSegment, error) {
 	if err != nil {
 		return nil, fmt.Errorf("get size of vector: %w", err)
 	}
+	gas.Step(4)
 
 	init := make([]uint32, vs)
 	for i := range init {
@@ -198,6 +204,7 @@ func readElementSegment(r io.Reader) (*ElementSegment, error) {
 		if err != nil {
 			return nil, fmt.Errorf("read function index: %w", err)
 		}
+		gas.Step(4)
 		init[i] = fIDx
 	}
 
@@ -213,11 +220,12 @@ type CodeSegment struct {
 	Body      []byte
 }
 
-func readCodeSegment(r io.Reader) (*CodeSegment, error) {
+func readCodeSegment(r io.Reader, gas GasMeter) (*CodeSegment, error) {
 	ss, _, err := leb128.DecodeUint32(r)
 	if err != nil {
 		return nil, fmt.Errorf("get the size of code segment: %w", err)
 	}
+	gas.Step(4)
 
 	r = io.LimitReader(r, int64(ss))
 
@@ -250,6 +258,7 @@ func readCodeSegment(r io.Reader) (*CodeSegment, error) {
 	if body[len(body)-1] != byte(OptCodeEnd) {
 		return nil, fmt.Errorf("expr not end with OptCodeEnd")
 	}
+	gas.Step(int64(ss))
 
 	return &CodeSegment{
 		Body:      body[:len(body)-1],
@@ -263,17 +272,18 @@ type DataSegment struct {
 	Init             []byte
 }
 
-func readDataSegment(r io.Reader) (*DataSegment, error) {
+func readDataSegment(r io.Reader, gas GasMeter) (*DataSegment, error) {
 	d, _, err := leb128.DecodeUint32(r)
 	if err != nil {
 		return nil, fmt.Errorf("read memory index: %w", err)
 	}
+	gas.Step(4)
 
 	if d != 0 {
 		return nil, fmt.Errorf("invalid memory index: %d", d)
 	}
 
-	expr, err := readConstantExpression(r)
+	expr, err := readConstantExpression(r, gas)
 	if err != nil {
 		return nil, fmt.Errorf("read offset expression: %w", err)
 	}
@@ -286,11 +296,13 @@ func readDataSegment(r io.Reader) (*DataSegment, error) {
 	if err != nil {
 		return nil, fmt.Errorf("get the size of vector: %w", err)
 	}
+	gas.Step(4)
 
 	b := make([]byte, vs)
 	if _, err := io.ReadFull(r, b); err != nil {
 		return nil, fmt.Errorf("read bytes for init: %w", err)
 	}
+	gas.Step(int64(vs))
 
 	return &DataSegment{
 		OffsetExpression: expr,
