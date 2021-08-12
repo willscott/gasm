@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"math"
 
-	"github.com/mathetake/gasm/wasm/leb128"
+	"github.com/willscott/gasm/wasm/leb128"
 )
 
 const vmPageSize = 65536

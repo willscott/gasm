@@ -9,8 +9,8 @@ import (
 	"os"
 	"reflect"
 
-	"github.com/mathetake/gasm/hostfunc"
-	"github.com/mathetake/gasm/wasm"
+	"github.com/willscott/gasm/hostfunc"
+	"github.com/willscott/gasm/wasm"
 )
 
 const (
