@@ -18,12 +18,18 @@ type gas struct {
 	remaining int64
 }
 
+// NewGas creates a gas meter with the specified amount of gas
+func NewGas(limit int64) GasMeter {
+	return &gas{limit}
+}
+
 func (g *gas) Step(n int64) {
 	g.remaining -= n
 	if g.remaining <= 0 {
 		panic(ErrOutOfGas)
 	}
 }
+
 func (g *gas) Exceeded() bool {
 	return g.remaining <= 0
 }

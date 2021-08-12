@@ -37,12 +37,19 @@ func NewVM(module *Module, externModules map[string]*Module) (*VirtualMachine, e
 	return NewGasVM(module, externModules, &unmetered{})
 }
 
-func NewGasVM(module *Module, externModules map[string]*Module, gas GasMeter) (*VirtualMachine, error) {
+func NewGasVM(module *Module, externModules map[string]*Module, gas GasMeter) (vm *VirtualMachine, err error) {
+	defer func() {
+		if gas.Exceeded() {
+			err = ErrOutOfGas
+			return
+		}
+	}()
+
 	if err := module.buildIndexSpaces(externModules); err != nil {
 		return nil, fmt.Errorf("build index space: %w", err)
 	}
 
-	vm := &VirtualMachine{
+	vm = &VirtualMachine{
 		InnerModule:  module,
 		GasMeter:     gas,
 		OperandStack: NewVirtualMachineOperandStack(),
@@ -94,6 +101,13 @@ func NewGasVM(module *Module, externModules map[string]*Module, gas GasMeter) (*
 }
 
 func (vm *VirtualMachine) ExecExportedFunction(name string, args ...uint64) (returns []uint64, returnTypes []ValueType, err error) {
+	defer func() {
+		if vm.GasMeter.Exceeded() {
+			err = ErrOutOfGas
+			return
+		}
+	}()
+
 	exp, ok := vm.InnerModule.SecExports[name]
 	if !ok {
 		return nil, nil, fmt.Errorf("exported func of name %s not found", name)
