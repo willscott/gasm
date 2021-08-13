@@ -123,7 +123,7 @@ func (vm *VirtualMachine) ExecExportedFunction(name string, args ...uint64) (ret
 
 	f := vm.Functions[exp.Desc.Index]
 	if len(f.FunctionType().InputTypes) != len(args) {
-		return nil, nil, fmt.Errorf("invalid number of arguments")
+		return nil, nil, fmt.Errorf("invalid number of arguments to '%s': had %d but called with %d", name, len(f.FunctionType().InputTypes), len(args))
 	}
 
 	for _, arg := range args {

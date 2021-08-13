@@ -101,8 +101,8 @@ func (vm *VirtualMachine) execNativeFunction() {
 		case OptCodeReturn:
 			return
 		case OptCodeCall:
-			fmt.Printf("call %T\n", vm.ActiveContext.Function)
 			virtualMachineInstructions[op](vm)
+			fmt.Printf("[wasm] called to %v\n", vm.ActiveContext.Function.Signature)
 		default:
 			virtualMachineInstructions[op](vm)
 		}

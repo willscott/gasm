@@ -3,6 +3,7 @@ package wasi
 import (
 	"encoding/binary"
 	"errors"
+	"fmt"
 	"io"
 	"io/fs"
 	"math/rand"
@@ -291,6 +292,7 @@ func environ_get(vm *wasm.VirtualMachine) reflect.Value {
 
 func (w *WASI) args_sizes_get(vm *wasm.VirtualMachine) reflect.Value {
 	body := func(uint32, uint32) uint32 {
+		fmt.Printf("argsizesget\n")
 		// not implemented yet
 		return 0
 	}
@@ -298,6 +300,7 @@ func (w *WASI) args_sizes_get(vm *wasm.VirtualMachine) reflect.Value {
 }
 func (w *WASI) args_get(vm *wasm.VirtualMachine) reflect.Value {
 	body := func(uint32, uint32) uint32 {
+		fmt.Printf("argsget\n")
 		// not implemented yet
 		return 0
 	}

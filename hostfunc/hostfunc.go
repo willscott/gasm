@@ -73,9 +73,12 @@ func (m *ModuleBuilder) SetFunction(modName, funcName string, fn func(machine *w
 			newFuncSig := reflect.FuncOf(ins, []reflect.Type{}, false)
 			return reflect.MakeFunc(newFuncSig, func(args []reflect.Value) []reflect.Value {
 				funcArgs := args[1:]
+				fmt.Printf("Calling %T\n", actualFunc.Interface())
 				funcRet := actualFunc.Call(funcArgs)
 				memloc := args[0].Int()
-				for i := 0; i < len(outs); i++ {
+				fmt.Printf("interpreting 1st param as mem loc (it was: %d)\n", memloc)
+				for i := len(outs) - 1; i >= 0; i-- {
+					fmt.Printf("putting littlendian of %s: %v\n", outs[i].Kind().String(), funcRet[i].Interface())
 					switch outs[i].Kind() {
 					case reflect.Float64:
 						binary.LittleEndian.PutUint64(vm.Memory[memloc:memloc+8], uint64(funcRet[i].Float()))
