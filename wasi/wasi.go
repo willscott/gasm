@@ -260,6 +260,8 @@ func (w *WASI) Modules() map[string]*wasm.Module {
 		b.MustSetFunction(wasiName, "fd_close", w.fd_close)
 		b.MustSetFunction(wasiName, "fd_read", w.fd_read)
 		b.MustSetFunction(wasiName, "path_open", w.path_open)
+		b.MustSetFunction(wasiName, "args_sizes_get", w.args_sizes_get)
+		b.MustSetFunction(wasiName, "args_get", w.args_get)
 	}
 	return b.Done()
 }
@@ -281,6 +283,21 @@ func environ_sizes_get(vm *wasm.VirtualMachine) reflect.Value {
 
 func environ_get(vm *wasm.VirtualMachine) reflect.Value {
 	body := func(uint32, uint32) (err uint32) {
+		// not implemented yet
+		return 0
+	}
+	return reflect.ValueOf(body)
+}
+
+func (w *WASI) args_sizes_get(vm *wasm.VirtualMachine) reflect.Value {
+	body := func(uint32, uint32) uint32 {
+		// not implemented yet
+		return 0
+	}
+	return reflect.ValueOf(body)
+}
+func (w *WASI) args_get(vm *wasm.VirtualMachine) reflect.Value {
+	body := func(uint32, uint32) uint32 {
 		// not implemented yet
 		return 0
 	}

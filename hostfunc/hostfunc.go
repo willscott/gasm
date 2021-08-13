@@ -1,6 +1,7 @@
 package hostfunc
 
 import (
+	"encoding/binary"
 	"fmt"
 	"reflect"
 
@@ -48,6 +49,57 @@ func (m *ModuleBuilder) SetFunction(modName, funcName string, fn func(machine *w
 	sig, err := getSignature(fn(&wasm.VirtualMachine{}).Type())
 	if err != nil {
 		return fmt.Errorf("invalid signature: %w", err)
+	}
+
+	if len(sig.ReturnTypes) > 1 {
+		// nope..
+		sig.InputTypes = append([]wasm.ValueType{wasm.ValueTypeI32}, sig.InputTypes...)
+		sig.ReturnTypes = []wasm.ValueType{}
+		// decode that wasm peculiarity
+		currFN := fn
+		fn = func(vm *wasm.VirtualMachine) reflect.Value {
+			actualFunc := currFN(vm)
+			t := actualFunc.Type()
+			ins := make([]reflect.Type, t.NumIn())
+			for i := 0; i < t.NumIn(); i++ {
+				ins[i] = t.In(i)
+			}
+			//wasm passes in a pointer to where the outputs should be written as the final parameter.
+			ins = append([]reflect.Type{reflect.TypeOf(int32(0))}, ins...)
+			outs := make([]reflect.Type, t.NumOut())
+			for i := 0; i < t.NumOut(); i++ {
+				outs[i] = t.Out(i)
+			}
+			newFuncSig := reflect.FuncOf(ins, []reflect.Type{}, false)
+			return reflect.MakeFunc(newFuncSig, func(args []reflect.Value) []reflect.Value {
+				funcArgs := args[1:]
+				funcRet := actualFunc.Call(funcArgs)
+				memloc := args[0].Int()
+				for i := 0; i < len(outs); i++ {
+					switch outs[i].Kind() {
+					case reflect.Float64:
+						binary.LittleEndian.PutUint64(vm.Memory[memloc:memloc+8], uint64(funcRet[i].Float()))
+						memloc += 8
+					case reflect.Float32:
+						binary.LittleEndian.PutUint32(vm.Memory[memloc:memloc+4], uint32(float32(funcRet[i].Float())))
+						memloc += 4
+					case reflect.Int32:
+						binary.LittleEndian.PutUint32(vm.Memory[memloc:memloc+4], uint32(funcRet[i].Int()))
+						memloc += 4
+					case reflect.Uint32:
+						binary.LittleEndian.PutUint32(vm.Memory[memloc:memloc+4], uint32(funcRet[i].Uint()))
+						memloc += 4
+					case reflect.Int64:
+						binary.LittleEndian.PutUint64(vm.Memory[memloc:memloc+8], uint64(funcRet[i].Int()))
+						memloc += 8
+					case reflect.Uint64:
+						binary.LittleEndian.PutUint64(vm.Memory[memloc:memloc+8], funcRet[i].Uint())
+						memloc += 8
+					}
+				}
+				return []reflect.Value{}
+			})
+		}
 	}
 
 	mod.IndexSpace.Function = append(mod.IndexSpace.Function, &wasm.HostFunction{

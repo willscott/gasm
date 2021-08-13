@@ -1,6 +1,7 @@
 package wasm
 
 import (
+	"fmt"
 	"math"
 	"reflect"
 )
@@ -99,6 +100,9 @@ func (vm *VirtualMachine) execNativeFunction() {
 		switch op := vm.ActiveContext.Function.Body[vm.ActiveContext.PC]; OptCode(op) {
 		case OptCodeReturn:
 			return
+		case OptCodeCall:
+			fmt.Printf("call %T\n", vm.ActiveContext.Function)
+			virtualMachineInstructions[op](vm)
 		default:
 			virtualMachineInstructions[op](vm)
 		}

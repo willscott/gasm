@@ -192,7 +192,7 @@ func (m *Module) applyFunctionImport(is *ImportSegment, em *Module, es *ExportSe
 	if !hasSameSignature(iSig.ReturnTypes, f.FunctionType().ReturnTypes) {
 		return fmt.Errorf("return signature mimatch: %#x != %#x", iSig.ReturnTypes, f.FunctionType().ReturnTypes)
 	} else if !hasSameSignature(iSig.InputTypes, f.FunctionType().InputTypes) {
-		return fmt.Errorf("input signature mimatch: %#x != %#x", iSig.InputTypes, f.FunctionType().InputTypes)
+		return fmt.Errorf("input signature mimatch: found %#x != host %#x", iSig.InputTypes, f.FunctionType().InputTypes)
 	}
 	m.IndexSpace.Function = append(m.IndexSpace.Function, f)
 	return nil
